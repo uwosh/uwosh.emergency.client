@@ -1,0 +1,162 @@
+Basic testing of this package.
+
+
+Let's do some setup and log in...
+
+    >>> from Products.Five.testbrowser import Browser
+	  >>> self.setRoles(("Manager",))
+	
+Install the product.
+
+    >>> from Products.CMFCore.utils import getToolByName
+    >>> qi = getToolByName(self.portal, 'portal_quickinstaller')
+    >>> qi.installProduct('uwosh.emergency.client')
+    ''
+	
+    >>> browser = Browser()
+    >>> browser.handleErrors = True
+    >>> portal_url = self.portal.absolute_url()
+    >>> from Products.PloneTestCase.setup import portal_owner, default_password
+    
+    >>> browser.open(portal_url + '/login_form?came_from=' + portal_url)
+    >>> browser.getControl(name='__ac_name').value = portal_owner
+    >>> browser.getControl(name='__ac_password').value = default_password
+    >>> browser.getControl(name='submit').click()
+
+We then turn off the various portlets, because they sometimes duplicate links
+and text (e.g. the navtree, the recent recent items listing) that we wish to
+test for in our own views. Having no portlets makes things easier.
+
+    >>> from zope.component import getUtility, getMultiAdapter
+    >>> from plone.portlets.interfaces import IPortletManager
+    >>> from plone.portlets.interfaces import IPortletAssignmentMapping
+
+    >>> left_column = getUtility(IPortletManager, name=u"plone.leftcolumn")
+    >>> left_assignable = getMultiAdapter((self.portal, left_column), IPortletAssignmentMapping)
+    >>> for name in left_assignable.keys():
+    ...     del left_assignable[name]
+
+    >>> right_column = getUtility(IPortletManager, name=u"plone.rightcolumn")
+    >>> right_assignable = getMultiAdapter((self.portal, right_column), IPortletAssignmentMapping)
+    >>> for name in right_assignable.keys():
+    ...     del right_assignable[name]
+
+
+Now, check for the control panel entries are NOT present since this is just a client install
+
+    >>> browser.open(self.portal.absolute_url())
+    >>> browser.getLink('Site Setup').click()
+    >>> 'Emergency configuration' in browser.contents
+    False
+    >>> 'Emergency Notification Sites' in browser.contents
+    False
+    
+    
+Setup the pub, priv keys so we can simulate updates
+
+    >>> import rsa
+    >>> from urllib import urlencode
+    >>> from DateTime import DateTime
+    >>> pub, priv = rsa.gen_pubpriv_keys(512)
+    
+    >>> props = getToolByName(self.portal, 'portal_properties').uwosh_emergency_client
+    >>> props.public_key_e = pub['e']
+    >>> props.public_key_n = pub['n']
+    
+
+Let's send a remote emergency message update and see it is works.
+
+    >>> orig_data = {
+    ...  'last_updated' : DateTime().pCommonZ(),
+    ...  'emergency_message' : "My Emergency Message",
+    ...  'enabled' : str(True),
+    ...  'show_on_all_pages' : str(False)
+    ... }
+    
+    >>> encoded_data = urlencode(orig_data)
+    >>> data = {
+    ...    'signed_data' : rsa.sign(encoded_data, priv)
+    ... }
+    
+    
+Fire up the page with the data.
+
+    >>> browser.open(self.portal.absolute_url() + "/@@update-emergency-message", data=urlencode(data))
+    >>> from uwosh.simpleemergency.config import SUCCESS_MESSAGE
+    >>> SUCCESS_MESSAGE == browser.contents
+    True
+    
+    >>> browser.open(self.portal.absolute_url())
+    >>> '<div id="emergencyMessage"' in browser.contents
+    True
+    >>> 'My Emergency Message' in browser.contents
+    True
+    
+    >>> browser.open(self.portal.absolute_url() + '/news')
+    >>> '<div id="emergencyMessage"' in browser.contents
+    False
+    >>> 'My Emergency Message' in browser.contents
+    False
+    
+
+    
+Let's disable it remotely not...
+
+    >>> orig_data = {
+    ...  'last_updated' : DateTime().pCommonZ(),
+    ...  'emergency_message' : "My Emergency Message",
+    ...  'enabled' : str(False),
+    ...  'show_on_all_pages' : str(False)
+    ... }
+    
+    >>> encoded_data = urlencode(orig_data)
+    >>> data = {
+    ...    'signed_data' : rsa.sign(encoded_data, priv)
+    ... }
+    
+    
+Fire up the page with the data.
+
+    >>> browser.open(self.portal.absolute_url() + "/@@update-emergency-message", data=urlencode(data))
+    >>> from uwosh.simpleemergency.config import SUCCESS_MESSAGE
+    >>> SUCCESS_MESSAGE == browser.contents
+    True
+    
+    
+    >>> browser.open(self.portal.absolute_url())
+    >>> '<div id="emergencyMessage"' in browser.contents
+    False
+    >>> 'My Emergency Message' in browser.contents
+    False
+    
+    
+Now let's to to disable the message with a time the less than the last previously updated value
+to simulate someone trying to replay an old emergency message to the server.
+
+    >>> orig_data = {
+    ...  'last_updated' : DateTime('Mar 9, 1997 01:07pm').pCommonZ(),
+    ...  'emergency_message' : "MY BAD MESSAGE",
+    ...  'enabled' : str(True),
+    ...  'show_on_all_pages' : str(True)
+    ... }
+  
+    >>> encoded_data = urlencode(orig_data)
+    >>> data = {
+    ...    'signed_data' : rsa.sign(encoded_data, priv)
+    ... }
+  
+    >>> try:
+    ...   browser.open(self.portal.absolute_url() + "/@@update-emergency-message", data=urlencode(data))
+    ... except Exception, inst:
+    ...    inst.code
+    500
+    
+And the message still isn't shown.
+    
+    >>> browser.open(self.portal.absolute_url())
+    >>> '<div id="emergencyMessage"' in browser.contents
+    False
+    >>> 'My Emergency Message' in browser.contents
+    False
+
+    

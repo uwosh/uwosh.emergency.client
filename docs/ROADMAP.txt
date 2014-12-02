@@ -1,0 +1,11 @@
+1.0
+---
+* polish everything up
+* configuration for public key? Or too easy for stupid users to screw it up?
+
+
+0.5
+---
+
+* basic functionality fulfilled
+* implement rsa public private key authentication

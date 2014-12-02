@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<import-steps>
+
+ <import-step 
+    id="uwosh.emergency.client-postInstall" 
+    handler="uwosh.emergency.client.importexport.install"
+    title="manual coded post-install for uwosh.emergency.client"
+    version="2008-11-12T15:25:18.681869">
+   manual coded post-install for uwosh.emergency.client
+   <dependency step="viewlets" />
+ </import-step>
+
+</import-steps>

@@ -1,0 +1,12 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+		xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    i18n_domain="uwosh.emergency">
+
+  <include package="uwosh.simpleemergency" />
+	<include package="plone.browserlayer" />
+	
+	<include file="profiles.zcml" />
+	<include package=".browser" />
+	
+</configure>

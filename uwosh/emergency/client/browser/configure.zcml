@@ -1,0 +1,22 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser">
+
+<!-- register the simple emergency viewlet in this package -->
+	<browser:viewlet
+		name="uwosh.simpleemergency.client"
+		manager="plone.app.layout.viewlets.interfaces.IPortalTop"
+		class="uwosh.simpleemergency.browser.viewlets.SimpleEmergencyViewlet"
+		layer="uwosh.emergency.client.interfaces.IUWOshEmergencyClientLayer"
+		permission="zope2.View" 
+		/>
+  
+  <browser:page
+		name="update-emergency-message"
+		for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+		class=".push.RemoteUpdateEmergencyMessage"
+		layer="uwosh.emergency.client.interfaces.IUWOshEmergencyClientLayer"
+		permission="zope2.View"
+		/>
+  
+</configure>

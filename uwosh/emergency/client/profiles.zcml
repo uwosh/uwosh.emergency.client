@@ -1,0 +1,22 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    i18n_domain="uwosh.emergency.client">
+
+    <genericsetup:registerProfile
+      name="default"
+      title="Client Emergency Notification"
+      directory="profiles/default"
+      description='Client product for receiving emergency notifications.'
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+    />
+
+    <genericsetup:registerProfile
+      name="uninstall"
+      title="Client Emergency Notification Uninstall Profile"
+      directory="profiles/uninstall"
+      description="Removes uwosh.emergency.client"
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+    />
+    
+</configure>
